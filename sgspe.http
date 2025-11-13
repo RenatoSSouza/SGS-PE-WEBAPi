@@ -1,0 +1,6 @@
+@sgspe_HostAddress = http://localhost:5101
+
+GET {{sgspe_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
