@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using sgspe.Data;
+using sgspe.Services.Companies;
+using sgspe.Services.SustainabilityIndicators;
 using sgspe.Services.Users;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +22,8 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PasswordHasher>();
+builder.Services.AddScoped<SustainabilityIndicatorService>();
+builder.Services.AddScoped<CompanyService>();
 
 var app = builder.Build();
 
