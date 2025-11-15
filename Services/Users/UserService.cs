@@ -184,7 +184,6 @@ public class UserService
         // Se necessario adicionar suporte para outros bancos de dados, faça aqui
         return false;
     }
-    // Helper para mapear User para UserResponse
     public static UserResponse MapToResponse(User user) => new(
         user.Id,
         user.Name,
