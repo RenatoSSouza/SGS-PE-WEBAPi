@@ -10,7 +10,8 @@ public record CreateCompanyRequest
     [StringLength(200, ErrorMessage = "Nome fantasia não pode exceder 200 caracteres")]
     string TradingName,
     [Required(ErrorMessage = "Setor é obrigatório")]
-    Sector Sector
+    Sector Sector,
+    CompanySize? Size = null
 );
 
 public record UpdateCompanyRequest
@@ -19,6 +20,7 @@ public record UpdateCompanyRequest
     string? LegalName,
     [StringLength(200, ErrorMessage = "Nome fantasia não pode exceder 200 caracteres")]
     string? TradingName,
-    Sector? Sector
+    Sector? Sector,
+    CompanySize? Size = null
 );
 

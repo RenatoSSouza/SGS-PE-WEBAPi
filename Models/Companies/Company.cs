@@ -8,6 +8,8 @@ public class Company
     public string LegalName { get; set; } = string.Empty;
     public string TradingName { get; set; } = string.Empty;
     public Sector Sector { get; set; } = Sector.Outros;
+    /// <summary>Porte; nulo = não informado (benchmark compara só por setor, com aviso).</summary>
+    public CompanySize? Size { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;
 }

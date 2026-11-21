@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using sgspe.Extensions;
 using sgspe.Models.Companies;
 using sgspe.Models.Enum;
 using sgspe.Services.Companies;
 
 namespace sgspe.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class CompaniesController : ControllerBase
@@ -16,6 +19,7 @@ public class CompaniesController : ControllerBase
         _companyService = companyService;
     }
 
+    [Authorize(Roles = AppRoles.Admin)]
     [HttpGet]
     public async Task<ActionResult<List<CompanyResponse>>> GetAll()
     {
@@ -31,12 +35,14 @@ public class CompaniesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<CompanyResponse>> GetById(Guid id)
     {
+        if (!User.IsAdmin() && User.GetCompanyId() != id) return Forbid();
         var company = await _companyService.GetByIdAsync(id);
         if (company == null)
             return NotFound();
 
         return Ok(CompanyResponse.FromEntity(company));
     }
+    [Authorize(Roles = AppRoles.Admin)]
     [HttpGet("sector/{sector}")]
     public async Task<ActionResult<List<CompanyResponse>>> GetBySector(Sector sector)
     {
@@ -53,6 +59,7 @@ public class CompaniesController : ControllerBase
 
         return Ok(response);
     }
+    [Authorize(Roles = AppRoles.Admin)]
     [HttpPost]
     public async Task<ActionResult<CompanyResponse>> Create(CreateCompanyRequest request)
     {
@@ -61,7 +68,8 @@ public class CompaniesController : ControllerBase
             var company = await _companyService.CreateAsync(
                 request.LegalName,
                 request.TradingName,
-                request.Sector);
+                request.Sector,
+                request.Size);
             return CreatedAtAction(nameof(GetById), new { id = company.Id }, CompanyResponse.FromEntity(company));
         }
         catch (ArgumentException ex)
@@ -74,19 +82,26 @@ public class CompaniesController : ControllerBase
         }
     }
 
+    [Authorize(Roles = AppRoles.ManagerOrAdmin)]
     [HttpPut("{id}")]
     public async Task<ActionResult<CompanyResponse>> Update(Guid id, UpdateCompanyRequest request)
     {
+        if (!User.IsAdmin() && User.GetCompanyId() != id) return Forbid();
+        // Setor e porte definem com quem a empresa é comparada no benchmark: só o Administrador altera.
+        if (!User.IsAdmin() && (request.Sector is not null || request.Size is not null))
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Somente o administrador pode alterar o setor e o porte da empresa." });
         var company = await _companyService.UpdateAsync(
             id,
             request.LegalName,
             request.TradingName,
-            request.Sector);
+            request.Sector,
+            request.Size);
         if (company == null)
             return NotFound();
 
         return Ok(CompanyResponse.FromEntity(company));
     }
+    [Authorize(Roles = AppRoles.Admin)]
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(Guid id)
     {

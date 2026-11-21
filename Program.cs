@@ -1,44 +1,35 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
 using sgspe.Data;
-using sgspe.Services.Companies;
-using sgspe.Services.SustainabilityIndicators;
-using sgspe.Services.Users;
+using sgspe.Extensions;
+using sgspe.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("SqliteConnection")));
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "SGS-PE",
-        Version = "v1",
-        Description = "API para gestão de SGS-PE",
-    });
-});
+builder.Configuration
+.AddJsonFile(builder.Environment.IsDevelopment()
+    ? "appsettings.Development.json"
+    : "appsettings.Production.json", optional: false, reloadOnChange: true)
+    .AddEnvironmentVariables();
 
-builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<PasswordHasher>();
-builder.Services.AddScoped<SustainabilityIndicatorService>();
-builder.Services.AddScoped<CompanyService>();
+builder.Services.AddControllersConfig();
+builder.Services.AddSwaggerConfig();
+builder.Services.AddDatabaseConfig(builder.Configuration);
+builder.Services.AddJwtAuthConfig(builder.Configuration);
+builder.Services.AddCorsConfig(builder.Configuration);
+builder.Services.AddApplicationServices(builder.Configuration);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "SGS-PE v1");
-        options.DefaultModelsExpandDepth(-1);
-    });
-}
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
+app.InitializeDatabase();
+
+await app.SeedInitialAdminAsync();
+
+app.UseSwaggerConfig(builder.Environment);
 app.UseHttpsRedirection();
+app.UseCorsConfig("AllowFrontend");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

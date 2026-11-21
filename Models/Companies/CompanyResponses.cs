@@ -8,7 +8,8 @@ public record CompanyResponse(
     string TradingName,
     Sector Sector,
     DateTime CreatedAt,
-    bool IsActive
+    bool IsActive,
+    CompanySize? Size = null
 )
 {
     public static CompanyResponse? FromEntity(Company? company)
@@ -22,7 +23,8 @@ public record CompanyResponse(
             company.TradingName,
             company.Sector,
             company.CreatedAt,
-            company.IsActive
+            company.IsActive,
+            company.Size
         );
     }
 }

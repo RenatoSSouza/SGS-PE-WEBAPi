@@ -12,6 +12,6 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime LastLoginAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;
-    public EnumRole Role { get; set; } = EnumRole.User;
+    public EnumRole Role { get; set; } = EnumRole.Employee;
     public Company? Company { get; set; }
 }

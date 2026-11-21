@@ -52,3 +52,11 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+# Banco SQLite local
+*.db
+*.db-shm
+*.db-wal
+# Python
+__pycache__/
+*.pyc
+Docs/

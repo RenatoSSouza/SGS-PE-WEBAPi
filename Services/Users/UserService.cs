@@ -35,6 +35,11 @@ public class UserService
             .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
     }
 
+    public async Task<List<User>> GetByCompanyAsync(Guid companyId)
+    {
+        return await _context.Users.Where(u => u.CompanyId == companyId).ToListAsync();
+    }
+
     public async Task<List<User>> GetAllAsync()
     {
         return await _context.Users.ToListAsync();
@@ -48,37 +53,18 @@ public class UserService
             _logger.LogInformation("Creating user with email: {Email} and CompanyId: {CompanyId}",
                 request.Email, request.CompanyId);
 
-            // Log para verificar o CompanyId
-            _logger.LogInformation("CompanyId received: {CompanyId}, Type: {Type}",
-                request.CompanyId, request.CompanyId.GetType());
-
-            // Verificar se existe ALGUMA company no banco
-            var anyCompany = await _context.Companies.AnyAsync();
-            _logger.LogInformation("Any company in database: {AnyCompany}", anyCompany);
-
-            // Verificar se ESTA company existe
             var companyExists = await _context.Companies.AnyAsync(c => c.Id == request.CompanyId);
-            _logger.LogInformation("Company with ID {CompanyId} exists: {CompanyExists}",
-                request.CompanyId, companyExists);
 
             if (!companyExists)
             {
-                // Listar todas as companies disponíveis para debug
-                var allCompanies = await _context.Companies.Select(c => new { c.Id, c.LegalName }).ToListAsync();
-                _logger.LogWarning("Company not found. Available companies: {Companies}",
-                    System.Text.Json.JsonSerializer.Serialize(allCompanies));
-
                 throw new InvalidUserOperationException($"Company with ID {request.CompanyId} not found");
             }
-            _logger.LogInformation("Creating user with email: {Email}", request.Email);
+
             var existingUser = await GetByEmailAsync(request.Email);
             if (existingUser is not null)
             {
                 throw new DuplicateEmailException($"Email {request.Email} already exists", ex: null!);
             }
-
-            _logger.LogInformation("No duplicate email found, creating user object");
-
 
             var user = new User
             {
@@ -88,11 +74,9 @@ public class UserService
                 Role = request.Role,
                 CompanyId = request.CompanyId
             };
-            _logger.LogInformation("User object created, adding to context");
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
-            _logger.LogInformation("User saved to database, committing transaction");
             await transaction.CommitAsync();
 
             _logger.LogInformation("User created successfully with ID: {UserId}", user.Id);
@@ -175,13 +159,16 @@ public class UserService
     {
         if (ex.InnerException is Microsoft.Data.Sqlite.SqliteException sqliteException)
         {
-            // SQLite - erro 19 é CONSTRAINT, códigos específicos para UNIQUE e PRIMARY KEY
+            // SQLite: erro 19 é CONSTRAINT; 2067 e 1555 indicam UNIQUE e PRIMARY KEY
             return sqliteException.SqliteErrorCode == 19 &&
                    (sqliteException.SqliteExtendedErrorCode == 2067 ||
                     sqliteException.SqliteExtendedErrorCode == 1555);
         }
 
-        // Se necessario adicionar suporte para outros bancos de dados, faça aqui
+        // PostgreSQL: 23505 é unique_violation
+        if (ex.InnerException is Npgsql.PostgresException pg)
+            return pg.SqlState == Npgsql.PostgresErrorCodes.UniqueViolation;
+
         return false;
     }
     public static UserResponse MapToResponse(User user) => new(

@@ -31,7 +31,7 @@ public class CompanyService
             .ToListAsync();
     }
 
-    public async Task<Company> CreateAsync(string legalName, string tradingName, Sector sector)
+    public async Task<Company> CreateAsync(string legalName, string tradingName, Sector sector, CompanySize? size = null)
     {
         if (await _context.Companies.AnyAsync(c => c.LegalName.ToLower() == legalName.ToLower()))
             throw new ArgumentException("Company with the same legal name already exists");
@@ -40,7 +40,8 @@ public class CompanyService
         {
             LegalName = legalName,
             TradingName = tradingName,
-            Sector = sector
+            Sector = sector,
+            Size = size
         };
 
         _context.Companies.Add(company);
@@ -48,7 +49,7 @@ public class CompanyService
         return company;
     }
 
-    public async Task<Company?> UpdateAsync(Guid id, string? legalName, string? tradingName, Sector? sector)
+    public async Task<Company?> UpdateAsync(Guid id, string? legalName, string? tradingName, Sector? sector, CompanySize? size = null)
     {
         var company = await GetByIdAsync(id);
         if (company is null)
@@ -61,7 +62,6 @@ public class CompanyService
             throw new ArgumentException("Company with the same legal name already exists");
         }
 
-        // Atualiza campos
         if (!string.IsNullOrEmpty(legalName))
             company.LegalName = legalName;
 
@@ -70,6 +70,9 @@ public class CompanyService
 
         if (sector.HasValue)
             company.Sector = sector.Value;
+
+        if (size.HasValue)
+            company.Size = size.Value;
 
         await _context.SaveChangesAsync();
         return company;
